@@ -1,29 +1,29 @@
 import pygame
 import sys
 from chessboard import Pawn
-
+import numpy as np
 def draw_pieces(screen,pieces,images):
     for piece in pieces:
-        if piece.name == ("r1" or "r2"):
+        if piece.name == (np.uint8(1) or np.uint8(2)):
             image = images[0]
-        elif piece.name == ("r3" or "r4"):
+        elif piece.name == (np.uint8(3) or np.uint8(4)):
             image = images[1]
-        elif piece.name == ("k1" or "k2"):
+        elif piece.name == (np.uint8(5) or np.uint8(6)):
             image = images[2]
             
-        elif piece.name == ("k3" or "k3"):
+        elif piece.name == (np.uint8(7) or np.uint8(8)):
             image = images[3]
             
-        elif piece.name == ("b1" or "b2"):
+        elif piece.name == (np.uint8(9) or np.uint8(10)):
             image = images[4] 
 
-        elif piece.name == ("b3" or "b4"):
+        elif piece.name == (np.uint8(11) or np.uint8(14)):
             image = images[5] 
             
-        elif piece.name == ("p1"):
+        elif piece.name == (np.uint8(12)):
             image = images[6]
         
-        elif piece.name == ("p2"):
+        elif piece.name == (np.uint8(13)):
             image = images[7]
         piece.draw(screen,image)
 
@@ -79,10 +79,10 @@ def check_events(board,front_pawns):
                                     piece.position  = piece.previous_position
                                     break
 
-                                if piece.name == "p1":
+                                if piece.name == np.uint8(12):
                                     if piece.move == False:
                                         if piece.check_move(x,y,pieces):
-                                            new_pawn = Pawn([x,y],1,"p1",True)
+                                            new_pawn = Pawn([x,y],1,np.uint8(12),True)
                                             board.pieces_w.append(new_pawn)
                                             board.side_to_move = not board.side_to_move
                                             board.ai_move = not board.ai_move
@@ -93,10 +93,10 @@ def check_events(board,front_pawns):
                                     else:
                                         piece.position = piece.previous_position
                                     
-                                elif piece.name == "p2":
+                                elif piece.name == np.uint8(13):
                                     if piece.move == False:
                                         if piece.check_move(x,y,pieces):
-                                            new_pawn = Pawn([x,y],0,"p2",True)
+                                            new_pawn = Pawn([x,y],0,np.uint8(13),True)
                                             board.pieces_b.append(new_pawn)
                                             board.side_to_move = not board.side_to_move
                                             piece.position  = piece.previous_position
@@ -121,18 +121,19 @@ def check_events(board,front_pawns):
                                         piece.position = piece.previous_position
 
     else:
-        move = board.get_AI_move(board,1)
+        move = board.get_AI_move(board,depth=3,max_player=0)
 
-        for piece in pieces:
+        for piece in board.pieces_w[:6]+board.pieces_b[:6]+front_pawns:
             if piece.name == move[0][1][2]:
-                if piece.name == "p1":
-                    new_pawn = Pawn([move[0][1][0],move[0][1][1]],1,"p1",True)
+                if piece.name == np.uint8(12):
+                    new_pawn = Pawn([move[0][1][0],move[0][1][1]],1,np.uint8(12),True)
                     board.pieces_w.append(new_pawn)
-                elif piece.name == "p2":
-                    new_pawn = Pawn([move[0][1][0],move[0][1][1]],0,"p2",True)
-                    board.pieces_w.append(new_pawn)
+                elif piece.name == np.uint8(13):
+                    new_pawn = Pawn([move[0][1][0],move[0][1][1]],0,np.uint8(13),True)
+                    board.pieces_b.append(new_pawn)
                 else:
                     piece.position = [move[0][1][0],move[0][1][1]]
+
         board.ai_move = not board.ai_move
         board.side_to_move = not board.side_to_move
 
@@ -140,9 +141,9 @@ def check_victory(pieces,board):
     w = 0
     b = 0
     for piece in pieces:
-        if piece.name == "p1":
+        if piece.name == np.uint8(12):
             w+=1
-        elif piece.name == "p2":
+        elif piece.name == np.uint8(13):
             b+=1
     if w ==8:
         print("White wins")

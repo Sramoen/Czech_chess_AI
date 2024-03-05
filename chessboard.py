@@ -7,7 +7,7 @@ import copy
 class Pieces():
     def __init__(self,position,color):
         self._position = position
-        self.previous_position = copy.deepcopy(self._position)
+        self.previous_position = [copy.deepcopy(self._position)]
         self.square = 87
         self.color = color
         self.square_size = 1
@@ -24,7 +24,12 @@ class Pieces():
         self.rect[1] = x[1]*self.square
 
     def set_position(self,x,y):
-        self.previous_position = copy.deepcopy(self._position)
+        self.previous_position.append(copy.deepcopy(self._position))
+        self._position[0] = x
+        self._position[1] = y
+
+    def set_position_unmake(self,x,y):
+        self.previous_position.pop()
         self._position[0] = x
         self._position[1] = y
 
@@ -48,7 +53,12 @@ class Bishop(Pieces):
     def __init__(self,position,color,name):
         super().__init__(position,color)        
         self.name = name
-            
+
+    def is_empty(self,stepx,stepy,pieces):
+            for piece in pieces:    
+                if piece._position == [self._position[0]+stepx,self._position[1]+stepy]:
+                    return False
+            return True          
 
     def check_move(self,x,y,pieces,pawn_check=False):
         number_of_squares_x = x - self._position[0]
@@ -73,6 +83,37 @@ class Bishop(Pieces):
         else:
             return False
         return True
+    
+    def generate_moves(self,pieces):
+        moves = []
+
+        step = 1
+        x,y = self._position
+        while x-step >=0 and y+step <=7: #vlevo nahoru
+            if not self.is_empty(-step,step,pieces):
+                break
+            moves.append([x-step,y+step,self.name])
+            step +=1
+        step = 1
+        while x+step <=7 and y+step <=7: #vpravo nahoru
+            if not self.is_empty(step,step,pieces):
+                break
+            moves.append([x+step,y+step,self.name])
+            step +=1
+        step =1
+        while x-step>=0 and y-step >=0: #vlevo dolů
+            if not self.is_empty(-step,-step,pieces):
+                break
+            moves.append([x-step,y-step,self.name])
+            step +=1
+        step = 1
+        while x+step <=7 and y-step >=0: #vpravo dolů
+            if not self.is_empty(step,-step,pieces):
+                break
+            moves.append([x+step,y-step,self.name])
+            step +=1
+
+        return moves  
 
 
 class Knight(Pieces):
@@ -88,9 +129,28 @@ class Knight(Pieces):
             and (self._position[0] + self.square_size == x or self._position[0] - self.square_size==x)):
             for piece in pieces:
                 if piece._position == [x,y]:
-
+                    print("Figurka je: ", piece._position,piece.name)
                     return False
             return True
+        return False
+    def is_empty(self,pieces,x,y):
+        for piece in pieces:
+            if piece._position == [x,y]:
+                return False
+        return True
+        
+    def generate_moves(self,pieces):
+        moves = []
+        x,y = self._position
+        deltas = [(2, 1), (1, 2), (-2, 1), (-1, 2), (2, -1), (1, -2), (-2, -1), (-1, -2)]
+        for dx, dy in deltas:
+            new_x, new_y = x + dx, y + dy
+            if 0 <= new_x <= 7 and 0 <= new_y <= 7:
+                if not self.is_empty(pieces,new_x,new_y):
+                    continue
+                moves.append([new_x, new_y,self.name])
+        # print("Tahy jezdcem",moves)
+        return moves
     
 class Rook(Pieces):
     def __init__(self,position,color,name):
@@ -112,12 +172,12 @@ class Rook(Pieces):
             else:
                     step_min = 0
                     step_max = self.square_size
-            for piece in pieces:
-                for i in range(min_y+step_min,max_y+step_max,self.square_size):
+            for i in range(min_y+step_min,max_y+step_max,self.square_size):
+                for piece in pieces:
                     if piece._position == [x,i]:
-                        if self._position != [x,i]:
+                            if self._position != [x,i]:
                     
-                            return False
+                                return False
 
         elif y == self._position[1] and x != self._position[0]:
             min_x, max_x = sorted([self._position[0],x])
@@ -131,9 +191,8 @@ class Rook(Pieces):
             else:
                     step_min = 0
                     step_max = self.square_size
-
-            for piece in pieces:
-                for i in range(min_x+step_min,max_x+step_max,self.square_size):
+            for i in range(min_x+step_min,max_x+step_max,self.square_size):
+                for piece in pieces:
                     if piece._position == [i,y]:
                         if self._position != [i,y]:
 
@@ -142,8 +201,44 @@ class Rook(Pieces):
             return False
 
         
-        return True   
+        return True
+    
+    def is_empty(self,stepx,stepy,pieces):
+            for piece in pieces:    
+                if piece._position == [self._position[0]+stepx,self._position[1]+stepy]:
+                    return False    
+            return True
+           
+    def generate_moves(self,pieces):
 
+        x, y = self._position
+        moves = []
+        step = 1
+        while x+step <=7: #vlevo nahoru
+            if not self.is_empty(step,0,pieces):
+                break
+            moves.append([x+step,y,self.name])
+            step +=1
+        step = 1
+        while y+step <=7: #vlevo nahoru
+            if not self.is_empty(0,step,pieces):
+                break
+            moves.append([x,y+step,self.name])
+            step +=1
+        step = 1
+        while y-step >=0: #vlevo nahoru
+            if not self.is_empty(0,-step,pieces):
+                break
+            moves.append([x,y-step,self.name])
+            step +=1
+        step = 1
+        while x-step >=0: #vlevo nahoru
+            if not self.is_empty(-step,0,pieces):
+                break
+            moves.append([x-step,y,self.name])
+            step +=1
+
+        return moves
 
 class Pawn(Pieces):
     def __init__(self,position,color,name,move):
@@ -163,5 +258,15 @@ class Pawn(Pieces):
                 if number_of_pieces == 3:
                     return True
         return False
-
+    
+    def generate_moves(self,moves,max_player):
+        count = {}
+        triplets = []
+        for coord in moves:
+            # Convert the coordinate to a tuple to make it hashable
+            coord_tuple = tuple(coord[:2])
+            count[coord_tuple] = count.get(coord_tuple, 0) + 1
+            if count[coord_tuple] == 3:
+                triplets.append([coord[0],coord[1],13-max_player])
+        return triplets
         
