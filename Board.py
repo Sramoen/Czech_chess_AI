@@ -1,5 +1,5 @@
 from chessboard import Rook,Bishop,Knight,Pawn
-import copy
+from numba import jit
 import time
 import numpy as np
 
@@ -25,6 +25,8 @@ class Board:
         self.depth = None
         self.ai_move = ai_starts
         self.side_to_move = int(not ai_starts)
+        self.moves_b = None
+        self.moves_w = None
         
     def make_move(self,move):
         x = move[0]
@@ -37,8 +39,6 @@ class Board:
             for piece in self.pieces_w+self.pieces_b:         
                 if piece.name == move[2]:
                     piece.set_position(x,y)
-                    # if piece.name == 10:
-                    #     print("Dělám tah černým jezdcem: ",piece._position)
                     break
 
     def unmake_move(self,name):
@@ -51,10 +51,6 @@ class Board:
         for piece in self.pieces_w+self.pieces_b:
             if piece.name == name:
                 piece.set_position_unmake(piece.previous_position[-1][0],piece.previous_position[-1][1])
-                # if piece.name == 10:
-
-                #     print("Vracím tah černým jezdcem: ",piece._position)
-
                 break
         
     def legal_moves(self,max_player):
@@ -76,7 +72,6 @@ class Board:
         print(self.side_to_move)
         root = self.minmax(board, depth,max_player=max_player)
         print(root)
-        # self.print_tree(self,root)
 
         return root,self.iter
 
@@ -87,8 +82,9 @@ class Board:
             
         if max_player: #maximize
                 score = -100000
-                moves = self.legal_moves(max_player)
-                for move in moves:
+                moves_w = self.legal_moves(max_player)
+                self.moves_w = moves_w.copy()
+                for move in moves_w:
                     board.make_move(move)
                     evaluation = self.minmax(board,depth-1,False,alpha,beta,move=move)[0]
                     if evaluation > score:
@@ -103,8 +99,9 @@ class Board:
                     self.iter+=1
         else:#minimaze
                 score = 10000
-                moves = self.legal_moves(max_player)
-                for move in moves:
+                moves_b = self.legal_moves(max_player)
+                self.moves_b = moves_b.copy()
+                for move in moves_b:
                     board.make_move(move)
                     evaluation = self.minmax(board,depth-1,True,alpha,beta,move=move)[0]
                     if evaluation < score:
@@ -118,24 +115,69 @@ class Board:
                     self.iter+=1
 
         return score,self.best_move
-
     def eval(self,move,max_player):
         score = 0
-        for piece in self.pieces_w:
-            if piece.name == np.uint8(12):
-                score += 100
-        if max_player:
-            number_of_moves_w = len(self.legal_moves(max_player))
+        temp_w = self.moves_w.copy()
+        temp_b = self.moves_b.copy()
+        for piece in self.pieces_w[:6]+self.pawns_w+self.pieces_b[:6]+self.pawns_b:
+            if piece.name == move[2]:
+                move_prev = [piece.previous_position[:],piece.name]
+                break
+
+        if self.moves_w is not None:
+            for move_colide in self.moves_w:
+                if move[:2] == move_colide[:2] or move_colide[:2]==move_prev[:2]:
+                    if move_colide[2] == 12:
+                        if move[:2] == move_colide[:2]:
+                            score-=50
+                        else:
+                            score+=50
+                    elif move_colide[2] == 13:
+                        if move[:2] == move_colide[:2]:
+                            score+=50
+                        else:
+                            score-=50
+                    else:
+                        indices_to_remove = [i for i, sublist in enumerate(temp_w) if sublist[2] == move_colide[2]]
+                        for index in sorted(indices_to_remove, reverse=True):
+                            temp_w.pop(index)
+                        for piece in self.pieces_w:
+                            if piece.name == move_colide[2]:
+                                temp_w+piece.generate_moves(self.pieces_w+self.pieces_b)
         else:
-            number_of_moves_w = len(self.legal_moves(not max_player))
+            temp_w = self.legal_moves(max_player)
+        if self.moves_b is not None:
+
+            for move_colide in self.moves_b:
+                if (move[:2] == move_colide[:2]) or (move_colide[:2]==move_prev[:2]):
+                    if move_colide[2] == 12:
+                        if move[:2] == move_colide[:2]:
+                            score-=50
+                        else:
+                            score+=50
+                    elif move_colide[2] == 13:
+                        if move[:2] == move_colide[:2]:
+                            score+=50
+                        else:
+                            score-=50
+                    else:
+                        indices_to_remove = [i for i, sublist in enumerate(temp_b) if sublist[2] == move_colide[2]]
+                        for index in sorted(indices_to_remove, reverse=True):
+                            temp_b.pop(index)
+                        for piece in self.pieces_w:
+                            if piece.name == move_colide[2]:
+                                temp_b+piece.generate_moves(self.pieces_w+self.pieces_b)
+        else:
+            temp_b = self.legal_moves(max_player)
+        
+        score += (len(temp_w) - len(temp_b))*10
+
         for piece in self.pieces_b:
             if piece.name == np.uint8(13):
                 score -= 100
-        if not max_player:          
-            number_of_moves_b = len(self.legal_moves(max_player))
-        else:
-            number_of_moves_b = len(self.legal_moves(not max_player))
-        score += (number_of_moves_w - number_of_moves_b)*10
+        for piece in self.pieces_w:
+            if piece.name == np.uint8(12):
+                score += 100
         return score
 
 

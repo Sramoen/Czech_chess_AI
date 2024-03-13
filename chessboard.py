@@ -1,7 +1,4 @@
 import pygame
-
-
-
 import copy
 
 class Pieces():
@@ -83,7 +80,6 @@ class Bishop(Pieces):
         else:
             return False
         return True
-    
     def generate_moves(self,pieces):
         moves = []
 
@@ -138,7 +134,6 @@ class Knight(Pieces):
             if piece._position == [x,y]:
                 return False
         return True
-        
     def generate_moves(self,pieces):
         moves = []
         x,y = self._position
