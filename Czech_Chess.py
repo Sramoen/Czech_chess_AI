@@ -1,6 +1,6 @@
 # Example file showing a basic pygame "game loop"
 import pygame
-from chessboard import Pawn
+from chessboard_pygame import Pawn,Board_pygame
 import game_functions
 import Board
 import numpy as np
@@ -13,7 +13,8 @@ clock = pygame.time.Clock()
 running = True
 square = 87
 #Settings
-board = Board.Board() #white starts
+board = Board_pygame() #white starts
+boardAI = Board.Board()
 
 r1 = pygame.transform.scale((pygame.image.load("D:\AAA_kodování\Alg_um_int\obrazky\WRook.png")),(80,80))
 r0 = pygame.transform.scale((pygame.image.load("D:\AAA_kodování\Alg_um_int\obrazky\BRook.png")),(80,80))
@@ -36,13 +37,13 @@ while running:
     # fill the screen with a color to wipe away anything from last frame
     screen.fill("brown")
     if not board.victory:         
-        game_functions.check_events(board,front_pawns)
+        game_functions.check_events(board,front_pawns,boardAI)
         game_functions.update_piece(board.pieces_w+board.pieces_b+front_pawns)
     else:
         break
     game_functions.draw_chessboard(screen)
+    game_functions.draw_arrow(screen,board.arrow)
     game_functions.draw_pieces(screen,board.pieces_w+board.pieces_b+front_pawns,draw_pieces_list)
-
     game_functions.check_victory(board.pieces_w+board.pieces_b,board)
 
 
