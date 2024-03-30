@@ -2,12 +2,14 @@
 import numpy as np
 
 class Pieces():
-    def __init__(self,color):
+    def __init__(self,color,piece_keys_zobras_hasing):
         self.color = color
         self.rook_moves = None
         self.bishop_moves = None
         self.knight_moves = None
         self.board_max = 2**64
+        self.piece_keys_zobras_hasing = piece_keys_zobras_hasing
+        self.name = None
 
     def pop_LSB(self,b):
         index = (b & -b).bit_length() - 1
@@ -15,12 +17,30 @@ class Pieces():
         return index,b
     
     def clear_file(self,file):
-        return 0x0101010101010101 << file 
+        return 0x0101010101010101 << file
+    
+    def update_hash(self,from_square_index,to_square_index,hash_value):
+        # XOR out the Zobrist key for the piece at the "from" square
+
+        if from_square_index is not None:
+            # print(self.piece_keys_zobras_hasing[piece][from_square_index])
+            hash_value ^= self.piece_keys_zobras_hasing[self.name][from_square_index]
+        if to_square_index is not None:
+            # print(self.piece_keys_zobras_hasing[piece][from_square_index])
+            # XOR in the Zobrist key for the piece at the "to" square
+            hash_value ^= self.piece_keys_zobras_hasing[self.name][to_square_index]
+            # XOR side_to_move
+        if not self.color:
+            hash_value ^= 1
+        return hash_value
+
 class Bishop(Pieces):
     
-    def __init__(self,color):
-        super().__init__(color)             
+    def __init__(self,color,piece_keys_zobras_hasing):
+        super().__init__(color,piece_keys_zobras_hasing)             
         self.name = 3
+        self.piece_keys_zobras_hasing = piece_keys_zobras_hasing
+        self.color = color
         self.spot1 = ~self.clear_file(7)
         self.spot2 = ~self.clear_file(0)
 
@@ -73,23 +93,26 @@ class Bishop(Pieces):
 
         return legal_moves_bitmap
     
-    def generate_moves(self,pieces,board):
+    def generate_moves(self,pieces,board,hash):
         piece = pieces[2]
-        moves = []
+        moves = {}
         self.bishop_moves = 0
         while piece:
             square_of_first_knight,piece = self.pop_LSB(piece)
             knight_moves = self.all_posible_moves(square_of_first_knight,board)
             while knight_moves:
                 index, knight_moves = self.pop_LSB(knight_moves)
-                moves.append([square_of_first_knight,index,self.name])
+                hash_value = self.update_hash(square_of_first_knight,index,hash)
+                moves[hash_value] = {"move": [square_of_first_knight,index,self.name],"score": None,"depth":None,"seen":False}
         return moves
 
 class Knight(Pieces):
 
-    def __init__(self,color):
-        super().__init__(color)
+    def __init__(self,color,piece_keys_zobras_hasing):
+        super().__init__(color,piece_keys_zobras_hasing)
         self.name = 2
+        self.piece_keys_zobras_hasing = piece_keys_zobras_hasing
+        self.color = color
         self.spot_1_clip = ~(self.clear_file(0) | self.clear_file(1))
         self.spot_2_clip = ~self.clear_file(0)
         self.spot_3_clip = ~self.clear_file(7)
@@ -121,9 +144,9 @@ class Knight(Pieces):
 
         return (spot_1 | spot_2 | spot_3 | spot_4 | spot_5 | spot_6 | spot_7 | spot_8) & ~board
     
-    def generate_moves(self,pieces,board):
+    def generate_moves(self,pieces,board,hash):
         piece = pieces[1]
-        moves = []
+        moves = {}
         self.knight_moves = 0
         while piece:
             square_of_first_knight,piece = self.pop_LSB(piece)
@@ -131,12 +154,15 @@ class Knight(Pieces):
 
             while knight_moves:
                 index, knight_moves = self.pop_LSB(knight_moves)
-                moves.append([square_of_first_knight,index,self.name])
+                hash_value = self.update_hash(square_of_first_knight,index,hash)
+                moves[hash_value] = {"move": [square_of_first_knight,index,self.name],"score": None,"depth":None,"seen":False}
         return moves
 
 class Rook(Pieces):
-    def __init__(self,color):
-        super().__init__(color)          
+    def __init__(self,color,piece_keys_zobras_hasing):
+        super().__init__(color,piece_keys_zobras_hasing)
+        self.color = color          
+        self.piece_keys_zobras_hasing = piece_keys_zobras_hasing
         self.name = 1
         self.spot1 = ~self.clear_file(7)
         self.spot2 = ~self.clear_file(0)
@@ -182,33 +208,41 @@ class Rook(Pieces):
 
         return legal_moves_bitmap
     
-    def generate_moves(self,pieces,board):
+    def generate_moves(self,pieces,board,hash):
         piece = pieces[0]
-        moves = []
+        moves = {}
         self.rook_moves = 0
         while piece:
             square_of_first_knight,piece = self.pop_LSB(piece)
             knight_moves = self.all_posible_moves(square_of_first_knight,board)
             while knight_moves:
                 index, knight_moves = self.pop_LSB(knight_moves)
-                moves.append([square_of_first_knight,index,self.name])
+                hash_value = self.update_hash(square_of_first_knight,index,hash)
+                moves[hash_value] = {"move": [square_of_first_knight,index,self.name],"score": None,"depth":None,"seen":False}
         return moves
     
 class Pawn(Pieces):
-    def __init__(self,color):
-        super().__init__(color)   
+    def __init__(self,color,piece_keys_zobras_hasing):
+        super().__init__(color,piece_keys_zobras_hasing)
+        self.piece_keys_zobras_hasing = piece_keys_zobras_hasing
+        self.color = color   
         self.name = 4
 
-    def generate_moves(self,moves):
+    def generate_moves(self,moves,hash):
         count = {}
-        triplets = []
+        moves_p = {}
         for coord in moves:
             # Convert the coordinate to a tuple to make it hashable
-            coord_tuple = coord[1]
-            count[coord_tuple] = count.get(coord_tuple, 0) + 1
-            if count[coord_tuple] == 3:
-                triplets.append([None,coord[1],self.name])
-        return triplets
+            coord = moves[coord]["move"][1]
+            if not coord in count:
+                count.update({coord:1})
+            else:
+                count[coord]+=1
+            if count[coord] == 3:
+                hash_value = self.update_hash(None,coord,hash)
+                moves_p[hash_value] = {"move": [None,coord,self.name],"score": None,"depth":None,"seen":False}
+        moves.update(moves_p)
+        return moves
     
 
         

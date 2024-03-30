@@ -145,6 +145,7 @@ def check_events(board,front_pawns,boardAI):
 
         move = update_boardAI(board.move_save_for_AI)
 
+        boardAI.update_hash(move[2],move[0],move[1],not board.side_to_move)
         boardAI.make_move(move,not board.side_to_move)
         move = boardAI.get_AI_move(boardAI,depth=3,max_player=0)
         print(move)
