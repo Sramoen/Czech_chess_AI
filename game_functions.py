@@ -4,6 +4,12 @@ from chessboard_pygame import Pawn,Rook,Bishop,Knight
 import numpy as np
 import Board
 def draw_pieces(screen,pieces,images):
+    """Draw all pieces.
+        Args:
+            scrren(): pygame object.
+            pieces(Piece): all pieces to draw.
+            images(list,tuple): list of path adresses to images.
+    """
     for piece in pieces:
         if piece.name == (np.uint8(1) or np.uint8(2)):
             image = images[0]
@@ -29,6 +35,13 @@ def draw_pieces(screen,pieces,images):
         piece.draw(screen,image)
 
 def draw_arrow(screen, arrow, color=(0,0,0), arrow_size=10):
+    """Draw arrow after move.
+        Args:
+            screen(): pygame object.
+            arrow(list,tuple): start and end coordinate of arrow.
+            color(tuple): tuple of color of arrow, default(0,0,0).
+            arrow_size(int): size of arrow,default=10.
+    """
     if arrow is not None:
         end = arrow[1]
         offset = 40
@@ -43,6 +56,10 @@ def draw_arrow(screen, arrow, color=(0,0,0), arrow_size=10):
 
 # Function to draw the chessboard
 def draw_chessboard(screen):
+    """Draw chessboard.
+        Args:
+            screen(): pygame object.
+    """
     # Define colors
     WHITE = (255, 255, 255)
     GRAY = (128, 128, 128)
@@ -61,7 +78,12 @@ def draw_chessboard(screen):
 pygame.display.set_caption("Chessboard")
 
 def check_events(board,front_pawns,boardAI):
-    """Respond to keypresses and mouse events"""
+    """Check events that happen in chessboard.
+        Args:
+            board(Board): representation of board.
+            front_pawns(list): List of Pawn class, pawns on the front of the board.
+            boardAI(Board): Board representation of AI.
+    """
     pieces = board.pieces_w+board.pieces_b+front_pawns
     SQUARE_SIZE = 87
     if not board.ai_move:
@@ -142,18 +164,25 @@ def check_events(board,front_pawns,boardAI):
         
 
     else:
-
+        #Ai is on the move - update his board since the last time
         move = update_boardAI(board.move_save_for_AI)
-
         boardAI.make_move(move,not board.side_to_move)
-        move = boardAI.get_AI_move(boardAI,depth=3,max_player=0)
+        #Get Ai move
+        move = boardAI.get_AI_move(boardAI,depth=5,max_player=0)
         print(move)
+        #Update pygame board
         update_pygame(move,board)
 
+        #Set human to move and change side to move
         board.ai_move = not board.ai_move
         board.side_to_move = not board.side_to_move
 
 def update_pygame(move,board):
+    """Update pygame board afte AI moved.
+        Args:
+            move(list): move made by AI.
+            board(Board): board representation pygame.
+    """
     print(move[0][1])
     cur_x = move[0][1][1] % 8
     cur_y = move[0][1][1] // 8
@@ -177,6 +206,10 @@ def update_pygame(move,board):
 
     
 def update_boardAI(piece):
+    """Update pygame board after Human moved.
+        Args:
+            piece(Piece): piece which moved.
+    """
     if piece.previous_position is not None:
         prev = piece.previous_position[0]+8*piece.previous_position[1]
     cur = piece.position[0]+8*piece.position[1]
@@ -192,6 +225,11 @@ def update_boardAI(piece):
     return move
 
 def check_victory(pieces,board):
+    """Check if either side won. If so end game
+        Args:
+            pieces(list): List of pieces.
+            board(Board): Pygame representation of board
+    """
     w = 0
     b = 0
     for piece in pieces:
@@ -208,6 +246,10 @@ def check_victory(pieces,board):
         board.victory = not board.victory
 
 def update_piece(pieces):
+    """Update piece location when draggin.
+        Args:
+            pieces(list): List of pieces.
+    """
     for piece in pieces:
         if piece.dragging:
             mouse_x,mouse_y = pygame.mouse.get_pos()

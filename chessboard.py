@@ -1,30 +1,53 @@
 
-import numpy as np
-
 class Pieces():
+    """Class for AI pieces."""
+
     def __init__(self,color):
+        """
+        Initialize piece.
+
+        Args:
+            color (bool): False (default) black piece.
+        """
         self.color = color
-        self.rook_moves = None
-        self.bishop_moves = None
-        self.knight_moves = None
         self.board_max = 2**64
 
     def pop_LSB(self,b):
+        """Pop least significant bit and return index and changed bitboard.
+        
+        Args:
+            b(int): bitboard.
+        """
         index = (b & -b).bit_length() - 1
         b &= b - 1
         return index,b
     
     def clear_file(self,file):
+        """Clear file (horizontal) and return it.
+        
+            Args:
+                file(int): file which should be cleared.
+        """
         return 0x0101010101010101 << file 
-class Bishop(Pieces):
     
+class Bishop(Pieces):
+    """Class for represeting bishop."""
     def __init__(self,color):
+        """Initialize bishop.
+            Args:
+                color(bool): color of bishop.
+        """
         super().__init__(color)             
         self.name = 3
         self.spot1 = ~self.clear_file(7)
         self.spot2 = ~self.clear_file(0)
 
     def all_posible_moves(self,index, occupied_bitmap):
+        """Get all possible moves of bishop.
+            Args:
+                index(int): index of starting position.
+                occupied_bitmap(int): bitmap of all pieces in current board.
+        """
         # Initialize an empty bitmap to store legal moves
         piece_bitmap = 1 << index   
         legal_moves_bitmap = 0
@@ -74,20 +97,30 @@ class Bishop(Pieces):
         return legal_moves_bitmap
     
     def generate_moves(self,pieces,board):
+        """Generate all possible moves of piece.
+            Args:
+                pieces(list,tuple): List of bitmaps for pieces.
+                board(int): all pieces bitmap.
+        """
         piece = pieces[2]
         moves = []
         self.bishop_moves = 0
         while piece:
-            square_of_first_knight,piece = self.pop_LSB(piece)
-            knight_moves = self.all_posible_moves(square_of_first_knight,board)
-            while knight_moves:
-                index, knight_moves = self.pop_LSB(knight_moves)
-                moves.append([square_of_first_knight,index,self.name])
+            square_of_first_bishop,piece = self.pop_LSB(piece)
+            bishop_moves = self.all_posible_moves(square_of_first_bishop,board)
+            while bishop_moves:
+                index, bishop_moves = self.pop_LSB(bishop_moves)
+                moves.append([square_of_first_bishop,index,self.name])
         return moves
 
 class Knight(Pieces):
+    """Class for represeting knight."""
 
     def __init__(self,color):
+        """Initialize Knight.
+            Args:
+                color(bool): color of Knight.
+        """
         super().__init__(color)
         self.name = 2
         self.spot_1_clip = ~(self.clear_file(0) | self.clear_file(1))
@@ -101,12 +134,22 @@ class Knight(Pieces):
         self.spot_8_clip = ~(self.clear_file(0) | self.clear_file(1))
 
     def shift_within_range(self,bitboard, shift_amount):
+        """Shift knight if possible (still on board).
+            Args:
+                bitboard(int): bitboard of knight.
+                shift_amount(int): how much shift.
+        """
         shifted_board = bitboard << shift_amount
         shift = shifted_board & ((1 << 63)-1)
         return shift
 
         
     def all_posible_moves(self,index,board):
+        """Get all possible moves of knight.
+            Args:
+                index(int): index of starting position.
+                occupied_bitmap(int): bitmap of all pieces in current board.
+        """
         bitmap = 1 << index
 
         spot_1 = self.shift_within_range((bitmap & self.spot_1_clip),6)
@@ -122,6 +165,11 @@ class Knight(Pieces):
         return (spot_1 | spot_2 | spot_3 | spot_4 | spot_5 | spot_6 | spot_7 | spot_8) & ~board
     
     def generate_moves(self,pieces,board):
+        """Generate all possible moves of piece.
+            Args:
+                pieces(list,tuple): List of bitmaps for pieces.
+                board(int): all pieces bitmap.
+        """
         piece = pieces[1]
         moves = []
         self.knight_moves = 0
@@ -135,12 +183,23 @@ class Knight(Pieces):
         return moves
 
 class Rook(Pieces):
+    """Class for represeting knight."""
+
     def __init__(self,color):
+        """Initialize Rook.
+            Args:
+                color(bool): color of Rook.
+        """
         super().__init__(color)          
         self.name = 1
         self.spot1 = ~self.clear_file(7)
         self.spot2 = ~self.clear_file(0)
     def all_posible_moves(self,index, occupied_bitmap):
+        """Get all possible moves of rook.
+            Args:
+                index(int): index of starting position.
+                occupied_bitmap(int): bitmap of all pieces in current board.
+        """
         # Initialize an empty bitmap to store legal moves
         piece_bitmap = 1 << index   
         legal_moves_bitmap = 0
@@ -183,29 +242,44 @@ class Rook(Pieces):
         return legal_moves_bitmap
     
     def generate_moves(self,pieces,board):
+        """Generate all possible moves of piece.
+            Args:
+                pieces(list,tuple): List of bitmaps for pieces.
+                board(int): all pieces bitmap.
+        """
         piece = pieces[0]
         moves = []
         self.rook_moves = 0
         while piece:
-            square_of_first_knight,piece = self.pop_LSB(piece)
-            knight_moves = self.all_posible_moves(square_of_first_knight,board)
-            while knight_moves:
-                index, knight_moves = self.pop_LSB(knight_moves)
-                moves.append([square_of_first_knight,index,self.name])
+            square_of_first_rook,piece = self.pop_LSB(piece)
+            rook_moves = self.all_posible_moves(square_of_first_rook,board)
+            while rook_moves:
+                index, rook_moves = self.pop_LSB(rook_moves)
+                moves.append([square_of_first_rook,index,self.name])
         return moves
     
 class Pawn(Pieces):
+    """Class for representing pawn."""
     def __init__(self,color):
-        super().__init__(color)   
+        super().__init__(color)
+        """Initialize Pawn.
+            Args:
+                color(bool): color of Pawn.
+        """   
         self.name = 4
 
     def generate_moves(self,moves):
+        """Generate all possible moves of pawn.
+            Args:
+            moves(list,tuple): all moves from other pieces.
+        """
         count = {}
         triplets = []
         for coord in moves:
             # Convert the coordinate to a tuple to make it hashable
             coord_tuple = coord[1]
             count[coord_tuple] = count.get(coord_tuple, 0) + 1
+            #If square is attacked three times - append move
             if count[coord_tuple] == 3:
                 triplets.append([None,coord[1],self.name])
         return triplets

@@ -3,7 +3,14 @@ import copy
 import numpy as np
 
 class Pieces():
+    """Class for piece representation in pygame."""
     def __init__(self,position,color):
+        """Initialize pygame piece.
+
+            Args:
+                position(list): coordinates of piece.
+                color(bool): color of piece, False if black, True if White.
+        """
         self._position = position
         self.previous_position = [copy.deepcopy(self._position)]
         self.square = 87
@@ -13,6 +20,7 @@ class Pieces():
         self.rect = pygame.Rect(self._position[0]*self.square, self._position[1]*self.square, 80, 80)
         self.move_save_for_AI = None
 
+    #Used property to make MR. Dobrovsky proud :)
     @property
     def position(self):
         return self._position
@@ -33,33 +41,74 @@ class Pieces():
         self._position[1] = y
 
     def check_piece(self,mouse_x,mouse_y,color):
+        """Check if piece collide with mouse.
+            Args:
+                mouse_x(int): x coordinate of mouse.
+                mouse_y(int): y coordinate of mouse.
+                color(bool): color of piece.
+        """
         if self.color == color:
             return self.rect.collidepoint((mouse_x,mouse_y))
         
     def draw(self,screen,image):
+        """Draw piece.
+        Args:
+            screen(): pygame object.
+            image(list): pygame image.
+        """
         screen.blit(image,[self.rect[0],self.rect[1]])
 
     def update_position(self,mouse):
+        """Update position of pice to center of mouse.
+            Arge:
+                mouse(list): coordinates of mouse.
+        """
         self.rect[0] = self._position[0]*87
         self.rect[1] = self._position[1]*87
         self.rect.center = mouse
 
     def check_board(self,x,y):
+        """Check if piece is still in the board.
+            Args:
+                x(int): x coordinate.
+                y(int): y coordinate.
+        """
         return ((x <= 7) and (y <= 7) and (x>=0) and (y>=0))        
         
 class Bishop(Pieces):
+    """Class for represeting bishop."""
     
     def __init__(self,position,color,name):
+        """Initialize bishop.
+            Args:
+                position(list): position of bishop.
+                color(bool): color of bishop.
+                name(int): name of bishop.
+        """
         super().__init__(position,color)        
         self.name = name
 
     def is_empty(self,stepx,stepy,pieces):
+            """Check if the square is empty.
+            
+                Args:
+                    stepx(int): new x position of piece.
+                    stepx(int): new y position of piece.
+                    pieces(list): list of all pieces.
+            """
             for piece in pieces:    
                 if piece._position == [self._position[0]+stepx,self._position[1]+stepy]:
                     return False
             return True          
 
     def check_move(self,x,y,pieces,pawn_check=False):
+        """Check if the move is possible.
+            Args:
+                x(int): x coordinate of move.
+                y(int): y coordinate of move
+                pices(list): list of pieces.
+                pawn_check(bool): True if check_move is used fro checking pawn move.
+        """
         number_of_squares_x = x - self._position[0]
         number_of_squares_y = y - self._position[1]
 
@@ -82,45 +131,28 @@ class Bishop(Pieces):
         else:
             return False
         return True
-    def generate_moves(self,pieces):
-        moves = []
-
-        step = 1
-        x,y = self._position
-        while x-step >=0 and y+step <=7: #vlevo nahoru
-            if not self.is_empty(-step,step,pieces):
-                break
-            moves.append([x-step,y+step,self.name])
-            step +=1
-        step = 1
-        while x+step <=7 and y+step <=7: #vpravo nahoru
-            if not self.is_empty(step,step,pieces):
-                break
-            moves.append([x+step,y+step,self.name])
-            step +=1
-        step =1
-        while x-step>=0 and y-step >=0: #vlevo dolů
-            if not self.is_empty(-step,-step,pieces):
-                break
-            moves.append([x-step,y-step,self.name])
-            step +=1
-        step = 1
-        while x+step <=7 and y-step >=0: #vpravo dolů
-            if not self.is_empty(step,-step,pieces):
-                break
-            moves.append([x+step,y-step,self.name])
-            step +=1
-
-        return moves  
 
 
 class Knight(Pieces):
-
+    """Class for represeting knight."""
     def __init__(self,position,color,name):
+        """Initialize knight.
+            Args:
+                position(list): position of knight.
+                color(bool): color of knight.
+                name(int): name of knight.
+        """
         super().__init__(position,color)   
         self.name = name
             
     def check_move(self,x,y,pieces,pawn_check=False):
+        """Check if the move is possible.
+            Args:
+                x(int): x coordinate of move.
+                y(int): y coordinate of move
+                pices(list): list of pieces.
+                pawn_check(bool): True if check_move is used fro checking pawn move.
+        """
         if ((self._position[0] + self.square_size*2 == x or self._position[0] - self.square_size*2==x)\
             and (self._position[1] + self.square_size == y or self._position[1] - self.square_size==y))\
         or ((self._position[1] + self.square_size*2 == y or self._position[1] - self.square_size*2==y)\
@@ -132,30 +164,38 @@ class Knight(Pieces):
             return True
         return False
     def is_empty(self,pieces,x,y):
+        """Check if the square is empty.
+        
+            Args:
+                x(int): new x position of piece.
+                y(int): new y position of piece.
+                pieces(list): list of all pieces.
+        """
         for piece in pieces:
             if piece._position == [x,y]:
                 return False
         return True
-    def generate_moves(self,pieces):
-        moves = []
-        x,y = self._position
-        deltas = [(2, 1), (1, 2), (-2, 1), (-1, 2), (2, -1), (1, -2), (-2, -1), (-1, -2)]
-        for dx, dy in deltas:
-            new_x, new_y = x + dx, y + dy
-            if 0 <= new_x <= 7 and 0 <= new_y <= 7:
-                if not self.is_empty(pieces,new_x,new_y):
-                    continue
-                moves.append([new_x, new_y,self.name])
-        # print("Tahy jezdcem",moves)
-        return moves
     
 class Rook(Pieces):
+    """Class for represeting rook."""
+
     def __init__(self,position,color,name):
+        """Initialize rook.
+            Args:
+                position(list): position of rook.
+                color(bool): color of rook.
+                name(int): name of rook.
+        """
         super().__init__(position,color)          
         self.name = name 
     def check_move(self,x,y,pieces,pawn_check=False):
-        # print("here in rook")
-
+        """Check if the move is possible.
+            Args:
+                x(int): x coordinate of move.
+                y(int): y coordinate of move
+                pices(list): list of pieces.
+                pawn_check(bool): True if check_move is used fro checking pawn move.
+        """
         if x == self._position[0] and y != self._position[1]:
 
             min_y, max_y = sorted([self._position[1],y])
@@ -201,49 +241,38 @@ class Rook(Pieces):
         return True
     
     def is_empty(self,stepx,stepy,pieces):
-            for piece in pieces:    
-                if piece._position == [self._position[0]+stepx,self._position[1]+stepy]:
-                    return False    
-            return True
-           
-    def generate_moves(self,pieces):
-
-        x, y = self._position
-        moves = []
-        step = 1
-        while x+step <=7: #vlevo nahoru
-            if not self.is_empty(step,0,pieces):
-                break
-            moves.append([x+step,y,self.name])
-            step +=1
-        step = 1
-        while y+step <=7: #vlevo nahoru
-            if not self.is_empty(0,step,pieces):
-                break
-            moves.append([x,y+step,self.name])
-            step +=1
-        step = 1
-        while y-step >=0: #vlevo nahoru
-            if not self.is_empty(0,-step,pieces):
-                break
-            moves.append([x,y-step,self.name])
-            step +=1
-        step = 1
-        while x-step >=0: #vlevo nahoru
-            if not self.is_empty(-step,0,pieces):
-                break
-            moves.append([x-step,y,self.name])
-            step +=1
-
-        return moves
+        """Check if the square is empty.
+        
+            Args:
+                stepx(int): new x position of piece.
+                stepy(int): new y position of piece.
+                pieces(list): list of all pieces.
+        """
+        for piece in pieces:    
+            if piece._position == [self._position[0]+stepx,self._position[1]+stepy]:
+                return False    
+        return True
 
 class Pawn(Pieces):
+    """Class for representing pawn."""
     def __init__(self,position,color,name,move):
+        """Initialize knight.
+            Args:
+                position(list): position of pawn.
+                color(bool): color of pawn.
+                name(int): name of pawn.
+        """
         super().__init__(position,color)   
         self.name = name
         self.move = move
     def check_move(self,x,y,pieces):
-
+        """Check if the move is possible.
+            Args:
+                x(int): x coordinate of move.
+                y(int): y coordinate of move
+                pices(list): list of pieces.
+                pawn_check(bool): True if check_move is used fro checking pawn move.
+        """
         if not self.move:
             number_of_pieces = 0
             for piece in pieces:
@@ -256,18 +285,14 @@ class Pawn(Pieces):
                     return True
         return False
     
-    def generate_moves(self,moves,max_player):
-        count = {}
-        triplets = []
-        for coord in moves:
-            # Convert the coordinate to a tuple to make it hashable
-            coord_tuple = tuple(coord[:2])
-            count[coord_tuple] = count.get(coord_tuple, 0) + 1
-            if count[coord_tuple] == 3:
-                triplets.append([coord[0],coord[1],13-max_player])
-        return triplets
+
 class Board_pygame:
+    """Class for representing pygame board."""
     def __init__(self,ai_starts=False):
+        """Initialization of pygame board class.
+        Args:
+            ai_starts (bool): False (default) if AI play as black.
+        """
         self.victory = 0
         self.best_move = None
         
