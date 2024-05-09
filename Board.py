@@ -1,7 +1,5 @@
 from chessboard import Rook,Bishop,Knight,Pawn
 import time
-import numpy as np
-import random
 import random
 
 
@@ -11,7 +9,7 @@ INF = float('inf')
 class Board:
     """Class for board representation for AI"""
 
-    def __init__(self,ai_starts=False):
+    def __init__(self,depth,ai_starts=False):
         """
         Initialize chess board
 
@@ -61,7 +59,7 @@ class Board:
             8: [random.randint(0, 2**64 - 1) for _ in range(64)]
         }
         self.iter = 0
-        self.depth = None
+        self.depth = depth
         self.ai_move = ai_starts
         self.side_to_move = int(not ai_starts)
         self.moves_b = None
@@ -241,7 +239,7 @@ class Board:
             return 1  # Sublist is not in the dictionary, sort it later
 
 
-    def get_AI_move(self,board,depth,max_player=0):
+    def get_AI_move(self,board,max_player=0):
         """
         Get best move by AI in current position.
 
@@ -254,8 +252,8 @@ class Board:
         self.previous_bitboard_piece = []
         self.transposition_table = {}
         self.iter = 0
+        depth = self.depth
 
-        self.depth = depth
         root = self.minmax(board, depth,max_player=max_player)
         self.make_move(root[1],0)
 
@@ -474,9 +472,9 @@ class Board:
 
 
 if __name__ == "__main__":
-    board = Board()
+    board = Board(depth=6)
     t1 = time.time()
-    root = board.get_AI_move(board,5,max_player=0)
+    root = board.get_AI_move(board,max_player=0)
     t2 = time.time()
     print(t2-t1)
     print(root)

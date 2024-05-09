@@ -1,6 +1,8 @@
 import pygame
 import copy
 import numpy as np
+import random
+import os
 
 class Pieces():
     """Class for piece representation in pygame."""
@@ -19,8 +21,9 @@ class Pieces():
         self.dragging = False
         self.rect = pygame.Rect(self._position[0]*self.square, self._position[1]*self.square, 80, 80)
         self.move_save_for_AI = None
+        self.image = None
 
-    #Used property to make MR. Dobrovsky proud :)
+    #There is no reason for using property, but we learned it in Data science, so i wanted to try it.
     @property
     def position(self):
         return self._position
@@ -50,13 +53,13 @@ class Pieces():
         if self.color == color:
             return self.rect.collidepoint((mouse_x,mouse_y))
         
-    def draw(self,screen,image):
+    def draw(self,screen):
         """Draw piece.
         Args:
             screen(): pygame object.
             image(list): pygame image.
         """
-        screen.blit(image,[self.rect[0],self.rect[1]])
+        screen.blit(self.image,[self.rect[0],self.rect[1]])
 
     def update_position(self,mouse):
         """Update position of pice to center of mouse.
@@ -87,6 +90,10 @@ class Bishop(Pieces):
         """
         super().__init__(position,color)        
         self.name = name
+        if color:
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\WBishop.png"))),(80,80)) 
+        else:
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\BBishop.png"))),(80,80)) 
 
     def is_empty(self,stepx,stepy,pieces):
             """Check if the square is empty.
@@ -144,6 +151,10 @@ class Knight(Pieces):
         """
         super().__init__(position,color)   
         self.name = name
+        if color:
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\WKnight.png"))),(80,80)) 
+        else:
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\BKnight.png"))),(80,80)) 
             
     def check_move(self,x,y,pieces,pawn_check=False):
         """Check if the move is possible.
@@ -187,7 +198,12 @@ class Rook(Pieces):
                 name(int): name of rook.
         """
         super().__init__(position,color)          
-        self.name = name 
+        self.name = name
+        if color:
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\WRook.png"))),(80,80)) 
+        else:
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\BRook.png"))),(80,80)) 
+
     def check_move(self,x,y,pieces,pawn_check=False):
         """Check if the move is possible.
             Args:
@@ -265,6 +281,11 @@ class Pawn(Pieces):
         super().__init__(position,color)   
         self.name = name
         self.move = move
+        if color:
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\WPawn.png"))),(80,80)) 
+        else:
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\BPawn.png"))),(80,80)) 
+
     def check_move(self,x,y,pieces):
         """Check if the move is possible.
             Args:
@@ -294,6 +315,7 @@ class Board_pygame:
             ai_starts (bool): False (default) if AI play as black.
         """
         self.victory = 0
+        self.draw = 0
         self.best_move = None
         
         self.pieces_w = [Rook([0,7],1,np.uint8(1)),Rook([7,7],1,np.uint8(2)),
@@ -309,9 +331,18 @@ class Board_pygame:
 
 
         self.iter = 0
-        self.depth = None
         self.ai_move = ai_starts
         self.side_to_move = int(not ai_starts)
         self.moves_b = None
         self.moves_w = None
         self.arrow = None
+        position = self.flatten([piece.position for piece in self.pieces_w + self.pieces_b])+[1]
+        self.positions = [int(''.join(map(str, position)))]
+        self.eval = 0
+    def check_threefold_repetition(self):
+        if self.positions.count(self.positions[-1]) ==3:
+            self.draw = 1
+            print("Game is drawn by three-fold repetition!")
+
+    def flatten(self,xss):
+        return [x for xs in xss for x in xs]
