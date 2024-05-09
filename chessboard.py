@@ -1,267 +1,288 @@
-import pygame
-import copy
 
 class Pieces():
-    def __init__(self,position,color):
-        self._position = position
-        self.previous_position = [copy.deepcopy(self._position)]
-        self.square = 87
+    """Class for AI pieces."""
+
+    def __init__(self,color):
+        """
+        Initialize piece.
+
+        Args:
+            color (bool): False (default) black piece.
+        """
         self.color = color
-        self.square_size = 1
-        self.dragging = False
-        self.rect = pygame.Rect(self._position[0]*self.square, self._position[1]*self.square, 80, 80)
+        self.board_max = 2**64
 
-    @property
-    def position(self):
-        return self._position
-    @position.setter
-    def position(self,x):
-        self._position = x.copy()
-        self.rect[0] = x[0]*self.square
-        self.rect[1] = x[1]*self.square
-
-    def set_position(self,x,y):
-        self.previous_position.append(copy.deepcopy(self._position))
-        self._position[0] = x
-        self._position[1] = y
-
-    def set_position_unmake(self,x,y):
-        self.previous_position.pop()
-        self._position[0] = x
-        self._position[1] = y
-
-    def check_piece(self,mouse_x,mouse_y,color):
-        if self.color == color:
-            return self.rect.collidepoint((mouse_x,mouse_y))
+    def pop_LSB(self,b):
+        """Pop least significant bit and return index and changed bitboard.
         
-    def draw(self,screen,image):
-        screen.blit(image,[self.rect[0],self.rect[1]])
-
-    def update_position(self,mouse):
-        self.rect[0] = self._position[0]*87
-        self.rect[1] = self._position[1]*87
-        self.rect.center = mouse
-
-    def check_board(self,x,y):
-        return ((x <= 7) and (y <= 7) and (x>=0) and (y>=0))        
-        
-class Bishop(Pieces):
+        Args:
+            b(int): bitboard.
+        """
+        index = (b & -b).bit_length() - 1
+        b &= b - 1
+        return index,b
     
-    def __init__(self,position,color,name):
-        super().__init__(position,color)        
-        self.name = name
+    def clear_file(self,file):
+        """Clear file (horizontal) and return it.
+        
+            Args:
+                file(int): file which should be cleared.
+        """
+        return 0x0101010101010101 << file 
+    
+class Bishop(Pieces):
+    """Class for represeting bishop."""
+    def __init__(self,color):
+        """Initialize bishop.
+            Args:
+                color(bool): color of bishop.
+        """
+        super().__init__(color)             
+        self.name = 3
+        self.spot1 = ~self.clear_file(7)
+        self.spot2 = ~self.clear_file(0)
 
-    def is_empty(self,stepx,stepy,pieces):
-            for piece in pieces:    
-                if piece._position == [self._position[0]+stepx,self._position[1]+stepy]:
-                    return False
-            return True          
+    def all_posible_moves(self,index, occupied_bitmap):
+        """Get all possible moves of bishop.
+            Args:
+                index(int): index of starting position.
+                occupied_bitmap(int): bitmap of all pieces in current board.
+        """
+        # Initialize an empty bitmap to store legal moves
+        piece_bitmap = 1 << index   
+        legal_moves_bitmap = 0
+        # Compute legal moves for each direction using bitwise operations
+        for direction in range(4):
+            # Compute the possible moves in the current direction
+            possible_moves = piece_bitmap
 
-    def check_move(self,x,y,pieces,pawn_check=False):
-        number_of_squares_x = x - self._position[0]
-        number_of_squares_y = y - self._position[1]
+            # Apply the shift corresponding to the current direction
+            if direction == 0:  # Up left
+                possible_moves <<= 9
+                possible_moves &= self.spot2
+            elif direction == 1:  # Down left
+                possible_moves >>= 9
+                possible_moves &= self.spot1
+            elif direction == 2:  # Upr right
+                possible_moves <<= 7
+                possible_moves &= self.spot1
 
-        if (abs(number_of_squares_x) == abs(number_of_squares_y)) and (number_of_squares_y!=0):
-            if x > self._position[0]:
-                step_x = self.square_size
-            else:
-                step_x = -self.square_size
+            elif direction == 3:  # Down right
+                possible_moves >>= 7
+                possible_moves &= self.spot2
 
-            if y > self._position[1]:
-                step_y = self.square_size
-            else:
-                step_y = -self.square_size
 
-            for piece in pieces:
-                for i,j in zip(range(self._position[0]+step_x,x+step_x,step_x),
-                                range(self._position[1]+step_y,y+step_y,step_y)):
-                    if piece._position == [i,j]:
-                        return False
-        else:
-            return False
-        return True
-    def generate_moves(self,pieces):
+            # Keep shifting as long as there are no blocking pieces or we reach the edge of the board
+            while not (possible_moves & int(occupied_bitmap)) and possible_moves and possible_moves<self.board_max:
+                # Update legal moves bitmap
+                legal_moves_bitmap |= possible_moves
+                # Further shift in the same direction
+                if direction == 0:  # Up
+                    possible_moves <<= 9
+                    possible_moves &= self.spot2
+
+                elif direction == 1:  # Down
+                    possible_moves >>= 9
+                    possible_moves &= self.spot1
+
+                elif direction == 2:  # Left
+                    possible_moves <<= 7
+                    possible_moves &= self.spot1
+
+                elif direction == 3:  # Right
+                    possible_moves >>= 7
+                    possible_moves &= self.spot2
+
+
+        return legal_moves_bitmap
+    
+    def generate_moves(self,pieces,board):
+        """Generate all possible moves of piece.
+            Args:
+                pieces(list,tuple): List of bitmaps for pieces.
+                board(int): all pieces bitmap.
+        """
+        piece = pieces[2]
         moves = []
-
-        step = 1
-        x,y = self._position
-        while x-step >=0 and y+step <=7: #vlevo nahoru
-            if not self.is_empty(-step,step,pieces):
-                break
-            moves.append([x-step,y+step,self.name])
-            step +=1
-        step = 1
-        while x+step <=7 and y+step <=7: #vpravo nahoru
-            if not self.is_empty(step,step,pieces):
-                break
-            moves.append([x+step,y+step,self.name])
-            step +=1
-        step =1
-        while x-step>=0 and y-step >=0: #vlevo dolů
-            if not self.is_empty(-step,-step,pieces):
-                break
-            moves.append([x-step,y-step,self.name])
-            step +=1
-        step = 1
-        while x+step <=7 and y-step >=0: #vpravo dolů
-            if not self.is_empty(step,-step,pieces):
-                break
-            moves.append([x+step,y-step,self.name])
-            step +=1
-
-        return moves  
-
+        self.bishop_moves = 0
+        while piece:
+            square_of_first_bishop,piece = self.pop_LSB(piece)
+            bishop_moves = self.all_posible_moves(square_of_first_bishop,board)
+            while bishop_moves:
+                index, bishop_moves = self.pop_LSB(bishop_moves)
+                moves.append([square_of_first_bishop,index,self.name])
+        return moves
 
 class Knight(Pieces):
+    """Class for represeting knight."""
 
-    def __init__(self,position,color,name):
-        super().__init__(position,color)   
-        self.name = name
-            
-    def check_move(self,x,y,pieces,pawn_check=False):
-        if ((self._position[0] + self.square_size*2 == x or self._position[0] - self.square_size*2==x)\
-            and (self._position[1] + self.square_size == y or self._position[1] - self.square_size==y))\
-        or ((self._position[1] + self.square_size*2 == y or self._position[1] - self.square_size*2==y)\
-            and (self._position[0] + self.square_size == x or self._position[0] - self.square_size==x)):
-            for piece in pieces:
-                if piece._position == [x,y]:
-                    print("Figurka je: ", piece._position,piece.name)
-                    return False
-            return True
-        return False
-    def is_empty(self,pieces,x,y):
-        for piece in pieces:
-            if piece._position == [x,y]:
-                return False
-        return True
-    def generate_moves(self,pieces):
-        moves = []
-        x,y = self._position
-        deltas = [(2, 1), (1, 2), (-2, 1), (-1, 2), (2, -1), (1, -2), (-2, -1), (-1, -2)]
-        for dx, dy in deltas:
-            new_x, new_y = x + dx, y + dy
-            if 0 <= new_x <= 7 and 0 <= new_y <= 7:
-                if not self.is_empty(pieces,new_x,new_y):
-                    continue
-                moves.append([new_x, new_y,self.name])
-        # print("Tahy jezdcem",moves)
-        return moves
-    
-class Rook(Pieces):
-    def __init__(self,position,color,name):
-        super().__init__(position,color)          
-        self.name = name 
-    def check_move(self,x,y,pieces,pawn_check=False):
-        # print("here in rook")
+    def __init__(self,color):
+        """Initialize Knight.
+            Args:
+                color(bool): color of Knight.
+        """
+        super().__init__(color)
+        self.name = 2
+        self.spot_1_clip = ~(self.clear_file(0) | self.clear_file(1))
+        self.spot_2_clip = ~self.clear_file(0)
+        self.spot_3_clip = ~self.clear_file(7)
+        self.spot_4_clip = ~(self.clear_file(6) | self.clear_file(7))
 
-        if x == self._position[0] and y != self._position[1]:
+        self.spot_5_clip = ~(self.clear_file(6) | self.clear_file(7))
+        self.spot_6_clip = ~self.clear_file(7)
+        self.spot_7_clip = ~self.clear_file(0)
+        self.spot_8_clip = ~(self.clear_file(0) | self.clear_file(1))
 
-            min_y, max_y = sorted([self._position[1],y])
-            if pawn_check:
-                if self._position[1] == min_y:
-                    step_min = self.square_size
-                    step_max = self.square_size
-                else:
-                    step_min = 0
-                    step_max = 0
-            else:
-                    step_min = 0
-                    step_max = self.square_size
-            for i in range(min_y+step_min,max_y+step_max,self.square_size):
-                for piece in pieces:
-                    if piece._position == [x,i]:
-                            if self._position != [x,i]:
-                    
-                                return False
-
-        elif y == self._position[1] and x != self._position[0]:
-            min_x, max_x = sorted([self._position[0],x])
-            if pawn_check:
-                if self._position[0] == min_x:
-                    step_min = self.square_size
-                    step_max = self.square_size
-                else:
-                    step_min = 0
-                    step_max = 0
-            else:
-                    step_min = 0
-                    step_max = self.square_size
-            for i in range(min_x+step_min,max_x+step_max,self.square_size):
-                for piece in pieces:
-                    if piece._position == [i,y]:
-                        if self._position != [i,y]:
-
-                            return False
-        else:
-            return False
+    def shift_within_range(self,bitboard, shift_amount):
+        """Shift knight if possible (still on board).
+            Args:
+                bitboard(int): bitboard of knight.
+                shift_amount(int): how much shift.
+        """
+        shifted_board = bitboard << shift_amount
+        shift = shifted_board & ((1 << 63)-1)
+        return shift
 
         
-        return True
+    def all_posible_moves(self,index,board):
+        """Get all possible moves of knight.
+            Args:
+                index(int): index of starting position.
+                occupied_bitmap(int): bitmap of all pieces in current board.
+        """
+        bitmap = 1 << index
+
+        spot_1 = self.shift_within_range((bitmap & self.spot_1_clip),6)
+        spot_2 = self.shift_within_range((bitmap & self.spot_2_clip),15)
+        spot_3 = self.shift_within_range((bitmap & self.spot_3_clip),17)
+        spot_4 = self.shift_within_range((bitmap & self.spot_4_clip),10)
+
+        spot_5 = (bitmap & self.spot_5_clip) >> 6
+        spot_6 = (bitmap & self.spot_6_clip) >> 15
+        spot_7 = (bitmap & self.spot_7_clip) >> 17
+        spot_8 = (bitmap & self.spot_8_clip) >> 10
+
+        return (spot_1 | spot_2 | spot_3 | spot_4 | spot_5 | spot_6 | spot_7 | spot_8) & ~board
     
-    def is_empty(self,stepx,stepy,pieces):
-            for piece in pieces:    
-                if piece._position == [self._position[0]+stepx,self._position[1]+stepy]:
-                    return False    
-            return True
-           
-    def generate_moves(self,pieces):
-
-        x, y = self._position
+    def generate_moves(self,pieces,board):
+        """Generate all possible moves of piece.
+            Args:
+                pieces(list,tuple): List of bitmaps for pieces.
+                board(int): all pieces bitmap.
+        """
+        piece = pieces[1]
         moves = []
-        step = 1
-        while x+step <=7: #vlevo nahoru
-            if not self.is_empty(step,0,pieces):
-                break
-            moves.append([x+step,y,self.name])
-            step +=1
-        step = 1
-        while y+step <=7: #vlevo nahoru
-            if not self.is_empty(0,step,pieces):
-                break
-            moves.append([x,y+step,self.name])
-            step +=1
-        step = 1
-        while y-step >=0: #vlevo nahoru
-            if not self.is_empty(0,-step,pieces):
-                break
-            moves.append([x,y-step,self.name])
-            step +=1
-        step = 1
-        while x-step >=0: #vlevo nahoru
-            if not self.is_empty(-step,0,pieces):
-                break
-            moves.append([x-step,y,self.name])
-            step +=1
+        self.knight_moves = 0
+        while piece:
+            square_of_first_knight,piece = self.pop_LSB(piece)
+            knight_moves = self.all_posible_moves(square_of_first_knight,board)
 
+            while knight_moves:
+                index, knight_moves = self.pop_LSB(knight_moves)
+                moves.append([square_of_first_knight,index,self.name])
         return moves
 
-class Pawn(Pieces):
-    def __init__(self,position,color,name,move):
-        super().__init__(position,color)   
-        self.name = name
-        self.move = move
-    def check_move(self,x,y,pieces):
+class Rook(Pieces):
+    """Class for represeting knight."""
 
-        if not self.move:
-            number_of_pieces = 0
-            for piece in pieces:
-                if isinstance(piece,Pawn):
-                    continue
-                if piece.color == self.color:
-                    if piece.check_move(x,y,pieces,pawn_check=True):
-                        number_of_pieces += 1
-                if number_of_pieces == 3:
-                    return True
-        return False
+    def __init__(self,color):
+        """Initialize Rook.
+            Args:
+                color(bool): color of Rook.
+        """
+        super().__init__(color)          
+        self.name = 1
+        self.spot1 = ~self.clear_file(7)
+        self.spot2 = ~self.clear_file(0)
+    def all_posible_moves(self,index, occupied_bitmap):
+        """Get all possible moves of rook.
+            Args:
+                index(int): index of starting position.
+                occupied_bitmap(int): bitmap of all pieces in current board.
+        """
+        # Initialize an empty bitmap to store legal moves
+        piece_bitmap = 1 << index   
+        legal_moves_bitmap = 0
+
+
+        # Compute legal moves for each direction using bitwise operations
+        for direction in range(4):
+            # Compute the possible moves in the current direction
+            possible_moves = int(piece_bitmap)
+            # Apply the shift corresponding to the current direction
+            if direction == 0:  # Up
+                possible_moves <<= 8
+            elif direction == 1:  # Down
+                possible_moves >>= 8
+            elif direction == 2:  # Left
+                possible_moves <<= 1
+                possible_moves &=self.spot2
+            elif direction == 3:  # Right
+                possible_moves >>= 1
+                possible_moves&=self.spot1
+            # Keep shifting as long as there are no blocking pieces or we reach the edge of the board
+            while not (possible_moves & occupied_bitmap) and possible_moves and possible_moves <self.board_max:
+                # Update legal moves bitmap
+                legal_moves_bitmap |= possible_moves
+
+                # Further shift in the same direction
+                if direction == 0:  # Up
+                    possible_moves <<= 8
+                elif direction == 1:  # Down
+                    possible_moves >>= 8
+                elif direction == 2:  # Left
+                    possible_moves <<= 1
+                    possible_moves&=self.spot2
+
+                elif direction == 3:  # Right
+                    possible_moves >>= 1
+                    possible_moves&=self.spot1
+
+
+        return legal_moves_bitmap
     
-    def generate_moves(self,moves,max_player):
+    def generate_moves(self,pieces,board):
+        """Generate all possible moves of piece.
+            Args:
+                pieces(list,tuple): List of bitmaps for pieces.
+                board(int): all pieces bitmap.
+        """
+        piece = pieces[0]
+        moves = []
+        self.rook_moves = 0
+        while piece:
+            square_of_first_rook,piece = self.pop_LSB(piece)
+            rook_moves = self.all_posible_moves(square_of_first_rook,board)
+            while rook_moves:
+                index, rook_moves = self.pop_LSB(rook_moves)
+                moves.append([square_of_first_rook,index,self.name])
+        return moves
+    
+class Pawn(Pieces):
+    """Class for representing pawn."""
+    def __init__(self,color):
+        super().__init__(color)
+        """Initialize Pawn.
+            Args:
+                color(bool): color of Pawn.
+        """   
+        self.name = 4
+
+    def generate_moves(self,moves):
+        """Generate all possible moves of pawn.
+            Args:
+            moves(list,tuple): all moves from other pieces.
+        """
         count = {}
         triplets = []
         for coord in moves:
             # Convert the coordinate to a tuple to make it hashable
-            coord_tuple = tuple(coord[:2])
+            coord_tuple = coord[1]
             count[coord_tuple] = count.get(coord_tuple, 0) + 1
+            #If square is attacked three times - append move
             if count[coord_tuple] == 3:
-                triplets.append([coord[0],coord[1],13-max_player])
+                triplets.append([None,coord[1],self.name])
         return triplets
+    
+
         
