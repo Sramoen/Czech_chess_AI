@@ -1,7 +1,7 @@
 # Czech Chess AI Engine
 
 ## Introduction
-As an avid chess enthusiast, I have always wanted to try building a chess engine. However, since many high-quality engines already exist for classical chess, I decided to build an AI engine for a lesser-known variant — Czech Chess — for which, to the best of my knowledge, no engine currently exists.
+As an chess enthusiast, I have always wanted to try building a chess engine. However, since many high-quality engines already exist for classical chess, I decided to build an AI engine for a lesser-known variant — Czech Chess — for which, to the best of my knowledge, no engine currently exists.
 
 ## What is Czech Chess?
 Czech Chess (also known as "folky") is a chess variant that was introduced to the public in 2019 at the Czech Open chess festival in Pardubice. It was invented by Petr Doubek from Jaroměř.
