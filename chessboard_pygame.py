@@ -91,9 +91,9 @@ class Bishop(Pieces):
         super().__init__(position,color)        
         self.name = name
         if color:
-            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\WBishop.png"))),(80,80)) 
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"images\WBishop.png"))),(80,80)) 
         else:
-            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\BBishop.png"))),(80,80)) 
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"images\BBishop.png"))),(80,80)) 
 
     def is_empty(self,stepx,stepy,pieces):
             """Check if the square is empty.
@@ -152,9 +152,9 @@ class Knight(Pieces):
         super().__init__(position,color)   
         self.name = name
         if color:
-            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\WKnight.png"))),(80,80)) 
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"images\WKnight.png"))),(80,80)) 
         else:
-            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\BKnight.png"))),(80,80)) 
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"images\BKnight.png"))),(80,80)) 
             
     def check_move(self,x,y,pieces,pawn_check=False):
         """Check if the move is possible.
@@ -200,9 +200,9 @@ class Rook(Pieces):
         super().__init__(position,color)          
         self.name = name
         if color:
-            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\WRook.png"))),(80,80)) 
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"images\WRook.png"))),(80,80)) 
         else:
-            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\BRook.png"))),(80,80)) 
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"images\BRook.png"))),(80,80)) 
 
     def check_move(self,x,y,pieces,pawn_check=False):
         """Check if the move is possible.
@@ -282,9 +282,9 @@ class Pawn(Pieces):
         self.name = name
         self.move = move
         if color:
-            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\WPawn.png"))),(80,80)) 
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"images\WPawn.png"))),(80,80)) 
         else:
-            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"obrazky\BPawn.png"))),(80,80)) 
+            self.image = pygame.transform.scale((pygame.image.load(os.path.join(os.path.dirname(os.path.realpath(__file__)),"images\BPawn.png"))),(80,80)) 
 
     def check_move(self,x,y,pieces):
         """Check if the move is possible.
