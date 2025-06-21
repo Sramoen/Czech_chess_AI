@@ -7,8 +7,12 @@ As chess enthusiast, I have always wanted to try building a chess engine. Howeve
 Czech Chess (also known as "folky") is a chess variant that was introduced to the public in 2019 at the Czech Open chess festival in Pardubice. It was invented by Petr Doubek from Jaroměř.
 
 In Czech Chess, only the following pieces are used: rooks, knights, bishops, and pawns. Kings and queens are absent from the game. The initial setup of the rooks, knights, and pawns is the same as in classical chess. However, unlike in classical chess, pieces cannot capture one another.
+![Starting position of the Czech Chess](images/Starting_pos.png)
+
 
 A pawn can only be placed on a square that is attacked by three of the player's pieces. Once placed, pawns cannot move or be captured. The goal of the game is to place eight pawns on the board. A draw can occur if the same position repeats three times, or by mutual agreement.
+![Possible placement of the pawns](images/Put_pawns.png)
+
 
 ## Methods Used
 The engine is built around the **minimax algorithm**. Minimax searches the game tree in depth-first order and alternates between maximizing (white's turn) and minimizing (black's turn) the evaluation of positions.
