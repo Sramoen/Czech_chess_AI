@@ -34,13 +34,8 @@ In classical chess, material is often the basis of evaluation. However, this doe
 1. **Number of placed pawns** (the win condition)
 2. **Mobility** — since blocked pieces (especially rooks and bishops) become ineffective, ensuring they have room to move is crucial.
 
-## Project Structure
-The engine is implemented in **Python**. The board state is represented using **bitboards**, which allow for efficient move generation using bitwise operations like shift and XOR. I tested multiple libraries (`numpy`, `bitarray`, `gmpy2`) for speed, but native Python integers proved fastest. I also attempted to use `numba` to speed up computation, though this was not successful.
-
-A basic GUI was created using **pygame**, so users can comfortably play against the engine.
-
-### Instalation
-The libraries needed for running the project are specified in requirements. To run the GUI (and play against the computer) you can just run the `Czech_chess.py` script.
+### Instalation and usage
+You can simply clone the repository. External libraries needed for running the project are specified in requirements. To run the GUI (and play against the computer) you can just run the `Czech_Chess.py` script. A basic GUI was created using **pygame**, so users can comfortably play against the engine.
 
 ---
 
